@@ -16,9 +16,4 @@ Before you begin, ensure that you have the following installed:
 - **pip** (Python package installer)
 - **Git** (for version control and cloning the repository)
 
-## Installing Dependencies
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/Nishadhana-B/summarization-chatbot.git
-   cd summarization-chatbot
