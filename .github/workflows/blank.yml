@@ -1,0 +1,65 @@
+import os
+from flask import Flask, render_template, request
+from werkzeug.utils import secure_filename
+from PyPDF2 import PdfReader  # For reading PDF files (or use PyMuPDF for more advanced text extraction)
+
+app = Flask(__name__)
+
+# Allowed extensions for uploaded files
+ALLOWED_EXTENSIONS = {'pdf'}
+
+# Folder where uploaded PDFs will be stored
+UPLOAD_FOLDER = 'uploads'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+# Function to check allowed file types
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+# Home route to upload PDF and process
+@app.route("/", methods=["GET", "POST"])
+def home():
+    summary = ""
+    if request.method == "POST":
+        # Check if the file part exists
+        if 'pdf_file' not in request.files:
+            return "No file part"
+        
+        file = request.files['pdf_file']
+        
+        # If no file is selected
+        if file.filename == '':
+            return "No selected file"
+        
+        # If file is valid
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)  # Sanitize the filename
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))  # Save file to uploads folder
+
+            # Process the PDF file for summarization
+            summary = summarize_pdf(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+
+    # Render the HTML page with the summary (if available)
+    return render_template('index.html', summary=summary)
+
+# Function to summarize the PDF text
+def summarize_pdf(file_path):
+    try:
+        # Reading the PDF file
+        pdf_reader = PdfReader(file_path)
+        text = ""
+        for page in pdf_reader.pages:
+            text += page.extract_text()
+
+        # Basic text summarization (You can use NLP libraries like HuggingFace or custom logic here)
+        if len(text) > 1000:
+            return text[:1000] + "..."  # Example summary
+        else:
+            return text if text else "No text found in the PDF."
+    except Exception as e:
+        return f"Error summarizing PDF: {e}"
+
+if __name__ == "__main__":
+    if not os.path.exists(UPLOAD_FOLDER):
+        os.makedirs(UPLOAD_FOLDER)  # Create the uploads folder if it doesn't exist
+    app.run(debug=True)
